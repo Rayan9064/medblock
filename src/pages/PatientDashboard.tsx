@@ -8,13 +8,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import { Eye, Download, FileText } from "lucide-react";
+import { Eye, Download, FileText, Plus } from "lucide-react";
+import { UploadReport } from "@/components/UploadReport";
 
 const PatientDashboard = () => {
   const { connected, publicKey } = useWallet();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
+  const [showUploadModal, setShowUploadModal] = useState(false);
 
   // Redirect to home if wallet not connected
   if (!connected) {
@@ -53,6 +55,10 @@ const PatientDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-medical-50 to-white">
+      {showUploadModal && (
+        <UploadReport onClose={() => setShowUploadModal(false)} />
+      )}
+
       {/* Header */}
       <nav className="border-b bg-white/50 backdrop-blur-lg">
         <div className="container mx-auto px-4">
@@ -92,15 +98,24 @@ const PatientDashboard = () => {
 
             <TabsContent value="reports" className="medical-card mt-6">
               <div className="space-y-6">
-                <div className="flex items-center space-x-4">
-                  <Input
-                    type="text"
-                    placeholder="Search reports..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="max-w-sm"
-                  />
-                  <Button variant="secondary">Search</Button>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <Input
+                      type="text"
+                      placeholder="Search reports..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="max-w-sm"
+                    />
+                    <Button variant="secondary">Search</Button>
+                  </div>
+                  <Button
+                    onClick={() => setShowUploadModal(true)}
+                    className="bg-medical-600 text-white hover:bg-medical-700"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Upload New Report
+                  </Button>
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
