@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -84,8 +85,14 @@ export function UploadReport({ onClose }: UploadReportProps) {
     };
 
     try {
-      const metadataStr = JSON.stringify(metadata);
-      const hash = await uploadToPinata(metadataStr);
+      const metadataBlob = new Blob([JSON.stringify(metadata)], {
+        type: "application/json",
+      });
+      const metadataFile = new File([metadataBlob], "metadata.json", {
+        type: "application/json",
+      });
+
+      const hash = await uploadToPinata(metadataFile);
       if (hash) {
         setMetadataHash(hash);
         toast({
