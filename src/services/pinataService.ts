@@ -1,7 +1,6 @@
 
 import axios from 'axios';
 import dotenv from 'dotenv';
-import FormData from 'form-data';
 
 dotenv.config();
 
@@ -11,6 +10,7 @@ const PINATA_SECRET_API_KEY = process.env.PINATA_SECRET_API_KEY;
 export const uploadToPinata = async (file: File | string) => {
   const url = `https://api.pinata.cloud/pinning/pinFileToIPFS`;
 
+  // Use the browser's FormData
   const formData = new FormData();
   
   if (file instanceof File) {
@@ -25,7 +25,6 @@ export const uploadToPinata = async (file: File | string) => {
     const res = await axios.post(url, formData, {
       maxBodyLength: Infinity,
       headers: {
-        'Content-Type': 'multipart/form-data',
         pinata_api_key: PINATA_API_KEY,
         pinata_secret_api_key: PINATA_SECRET_API_KEY,
       },
