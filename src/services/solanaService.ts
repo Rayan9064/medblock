@@ -1,5 +1,6 @@
+
 import { Metaplex, keypairIdentity, bundlrStorage } from '@metaplex-foundation/js';
-import { Connection, clusterApiUrl, Keypair, PublicKey } from '@solana/web3.js';
+import { Connection, clusterApiUrl, Keypair } from '@solana/web3.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -7,7 +8,9 @@ dotenv.config();
 const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
 const secretKey = Uint8Array.from(JSON.parse(process.env.PRIVATE_KEY || '[]'));
 const wallet = Keypair.fromSecretKey(secretKey);
-const metaplex = Metaplex.make(connection).use(keypairIdentity(wallet)).use(bundlrStorage());
+const metaplex = Metaplex.make(connection)
+  .use(keypairIdentity(wallet))
+  .use(bundlrStorage());
 
 export const mintMedicalNFT = async (metadataUri: string, name: string) => {
   try {
@@ -25,7 +28,7 @@ export const mintMedicalNFT = async (metadataUri: string, name: string) => {
 
 export const getNFTMetadata = async (mintAddress: string) => {
   try {
-    const nft = await metaplex.nfts().findByMint({ mintAddress: new PublicKey(mintAddress) });
+    const nft = await metaplex.nfts().findByMint({ mintAddress });
     return nft.json;
   } catch (error) {
     console.error('Error fetching metadata:', error);
