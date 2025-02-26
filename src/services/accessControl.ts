@@ -1,3 +1,5 @@
+// accessControl.ts
+// Grant/Revoke doctor access logic
 import { PublicKey, Transaction, SystemProgram } from '@solana/web3.js';
 
 export const grantAccess = async (patientPubkey: string, doctorPubkey: string) => {

@@ -1,3 +1,5 @@
+// metadataService.ts    
+// Fetch NFT metadata & report details
 import axios from 'axios';
 import { Metaplex, keypairIdentity, bundlrStorage } from '@metaplex-foundation/js';
 import { Connection, clusterApiUrl, PublicKey, Keypair } from '@solana/web3.js';
