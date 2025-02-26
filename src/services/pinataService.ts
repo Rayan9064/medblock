@@ -1,11 +1,8 @@
 
 import axios from 'axios';
-import dotenv from 'dotenv';
 
-dotenv.config();
-
-const PINATA_API_KEY = process.env.PINATA_API_KEY;
-const PINATA_SECRET_API_KEY = process.env.PINATA_SECRET_API_KEY;
+const PINATA_API_KEY = "12b61e322f676d42261b";
+const PINATA_SECRET_API_KEY = "66a2608c228e55046befef17d9a5015cac63fcea6ce4fd0b3fbd007c965d7eb0";
 
 export const uploadToPinata = async (file: File | string) => {
   const url = `https://api.pinata.cloud/pinning/pinFileToIPFS`;
