@@ -1,40 +1,26 @@
+
 import axios from 'axios';
-import dotenv from 'dotenv';
-import fs from 'fs';
-import path from 'path';
-import mime from 'mime-types';
-import FormData from 'form-data';
 
-dotenv.config();
+// Hard-coded Pinata API keys instead of using dotenv
+const PINATA_API_KEY = '12b61e322f676d42261b';
+const PINATA_SECRET_API_KEY = '66a2608c228e55046befef17d9a5015cac63fcea6ce4fd0b3fbd007c965d7eb0';
 
-const PINATA_API_KEY = process.env.PINATA_API_KEY;
-const PINATA_SECRET_API_KEY = process.env.PINATA_SECRET_API_KEY;
-
-export const uploadToPinata = async (filePath: string) => {
+// Modified function to handle File objects from browser instead of file paths
+export const uploadToPinata = async (file: File) => {
   const url = `https://api.pinata.cloud/pinning/pinFileToIPFS`;
 
-  if (!fs.existsSync(filePath)) {
-    console.error('File not found:', filePath);
-    return null;
-  }
-
-  const fileStream = fs.createReadStream(filePath);
-  const fileName = path.basename(filePath);
-  const fileType = mime.lookup(filePath) || 'application/octet-stream'; // Using mime-types here
-
+  // Create a FormData object using the browser's native FormData
   const formData = new FormData();
-  formData.append('file', fileStream, {
-    filename: fileName,
-    contentType: fileType,
-  });
+  formData.append('file', file);
 
   try {
     const res = await axios.post(url, formData, {
       maxBodyLength: Infinity,
       headers: {
-        ...formData.getHeaders(),
+        // Don't use formData.getHeaders() as that's for Node.js
+        'Content-Type': 'multipart/form-data',
         pinata_api_key: PINATA_API_KEY,
-        pinata_secret_api_key: PINATA_SECRET_API_KEY,
+        pinata_secret_api_key: PINATA_SECRET_API_KEY
       },
     });
 
@@ -46,6 +32,31 @@ export const uploadToPinata = async (filePath: string) => {
     return ipfsHash;
   } catch (error) {
     console.error('❌ Error uploading to Pinata:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+// Add a new function to upload JSON metadata
+export const uploadJSONToPinata = async (jsonData: any) => {
+  const url = `https://api.pinata.cloud/pinning/pinJSONToIPFS`;
+
+  try {
+    const res = await axios.post(url, jsonData, {
+      headers: {
+        'Content-Type': 'application/json',
+        pinata_api_key: PINATA_API_KEY,
+        pinata_secret_api_key: PINATA_SECRET_API_KEY
+      },
+    });
+
+    const ipfsHash = res.data.IpfsHash;
+    console.log(`✅ JSON uploaded to IPFS!`);
+    console.log(`🔗 IPFS Hash: ${ipfsHash}`);
+    console.log(`🌐 IPFS Gateway URL: https://gateway.pinata.cloud/ipfs/${ipfsHash}`);
+
+    return ipfsHash;
+  } catch (error) {
+    console.error('❌ Error uploading JSON to Pinata:', error.response?.data || error.message);
     throw error;
   }
 };

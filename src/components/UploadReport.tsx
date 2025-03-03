@@ -1,11 +1,10 @@
-
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { X, Upload, FileText, CheckCircle2 } from "lucide-react";
-import { uploadToPinata } from "@/services/pinataService";
+import { uploadToPinata, uploadJSONToPinata } from "@/services/pinataService";
 import { mintMedicalNFT } from "@/services/solanaService";
 
 interface UploadReportProps {
@@ -48,6 +47,7 @@ export function UploadReport({ onClose }: UploadReportProps) {
 
     setLoading(true);
     try {
+      // Pass the File object directly to uploadToPinata
       const hash = await uploadToPinata(selectedFile);
       if (hash) {
         setReportHash(hash);
@@ -63,6 +63,7 @@ export function UploadReport({ onClose }: UploadReportProps) {
         description: "Failed to upload report",
         variant: "destructive",
       });
+      console.error("Upload error:", error);
     }
     setLoading(false);
   };
@@ -85,14 +86,8 @@ export function UploadReport({ onClose }: UploadReportProps) {
     };
 
     try {
-      const metadataBlob = new Blob([JSON.stringify(metadata)], {
-        type: "application/json",
-      });
-      const metadataFile = new File([metadataBlob], "metadata.json", {
-        type: "application/json",
-      });
-
-      const hash = await uploadToPinata(metadataFile);
+      // Use the new uploadJSONToPinata function
+      const hash = await uploadJSONToPinata(metadata);
       if (hash) {
         setMetadataHash(hash);
         toast({
@@ -107,6 +102,7 @@ export function UploadReport({ onClose }: UploadReportProps) {
         description: "Failed to generate metadata",
         variant: "destructive",
       });
+      console.error("Metadata error:", error);
     }
   };
 
@@ -278,7 +274,7 @@ export function UploadReport({ onClose }: UploadReportProps) {
             </Button>
           )}
           {currentStep === 4 && (
-            <Button onClick={handleMintNFT} disabled={loading}>
+            <Button onClick={() => handleMintNFT()} disabled={loading}>
               {loading ? "Minting..." : "Mint NFT"}
             </Button>
           )}
