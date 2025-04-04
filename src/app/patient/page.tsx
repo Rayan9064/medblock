@@ -41,7 +41,8 @@ const PatientDashboard = () => {
         title: "Upload Successful",
         description: `Report uploaded to IPFS. Hash: ${hash}`,
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      console.error("Upload error:", error);
       toast({
         title: "Upload Failed",
         description: "An error occurred while uploading the report.",
@@ -81,9 +82,16 @@ const PatientDashboard = () => {
     });
   };
 
-
   const walletAddress = "GGJAXBBugajRsrovdqYiDtevoSo9RUwhJHTPUgUvTg3r";
-  const [reports, setReports] = useState<any[]>([]);
+  
+  interface Report {
+    name?: string;
+    created_at: number;
+    [key: string]: string | number | boolean | undefined;
+  }
+  
+  const [reports, setReports] = useState<Report[]>([]);
+  console.log("Medical Reports:", reports);
   console.log("Medical Reports:", reports);
 
   const fetchdata = async () => {

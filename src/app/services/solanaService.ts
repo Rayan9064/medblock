@@ -28,6 +28,11 @@ export interface MedicalNFTMetadata {
   reportUrl: string;
 }
 
+interface MetadataAttribute {
+  trait_type: string;
+  value: string;
+}
+
 export const mintMedicalNFT = async (metadata: MedicalNFTMetadata) => {
   try {
     // 🏥 Medical Report Metadata
@@ -93,9 +98,9 @@ export const fetchMedicalReports = async (walletAddress: string) => {
           return {
             name: metadata.name || "Unknown Report",
             description: metadata.description || "No description",
-            patient: metadata.attributes.find((attr: any) => attr.trait_type === "Patient")?.value || "Unknown",
-            doctor: metadata.attributes.find((attr: any) => attr.trait_type === "Doctor")?.value || "Unknown",
-            date: metadata.attributes.find((attr: any) => attr.trait_type === "Date")?.value || "Unknown",
+            patient: metadata.attributes.find((attr: MetadataAttribute) => attr.trait_type === "Patient")?.value || "Unknown",
+            doctor: metadata.attributes.find((attr: MetadataAttribute) => attr.trait_type === "Doctor")?.value || "Unknown",
+            date: metadata.attributes.find((attr: MetadataAttribute) => attr.trait_type === "Date")?.value || "Unknown",
             image: metadata.image || "",
             ipfsHash: nft.uri.replace("https://gateway.pinata.cloud/ipfs/", ""),
             fileUrl: metadata.properties?.files[0]?.uri || "",
