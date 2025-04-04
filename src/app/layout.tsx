@@ -34,7 +34,7 @@ export default function RootLayout({
             <ThemeProvider>
             <div className="min-h-screen flex flex-col">
               <Header1 />
-              <main className="flex-1 pt-22"> {/* Adjust pt-16 based on your navbar height */}
+              <main className="flex-1 pt-18"> {/* Adjust pt-16 based on your navbar height */}
               {children}
               </main>
             </div>

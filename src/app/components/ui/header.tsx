@@ -127,7 +127,9 @@ function Header1() {
                     </NavigationMenu>
                 </div>
                 <div className="flex lg:justify-center">
-                    <p className="font-semibold text-amber-100 text-2xl">MedBlock</p>
+                    <Link href="/" className="cursor-pointer">
+                        <p className="font-semibold text-amber-100 text-2xl">MedBlock</p>
+                    </Link>
                 </div>
                 <div className="flex justify-end w-full gap-4">
                     {/* <Button variant="ghost" className="hidden md:inline">

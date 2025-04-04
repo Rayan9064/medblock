@@ -1,13 +1,13 @@
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/router";
 
 const PatientNavbar = () => {
     const { connected, publicKey } = useWallet();
-    const navigate = useNavigate();
+    const router = useRouter();
 
     if (!connected) {
-        navigate("/");
+        router.push("/");
         return null;
       }
 

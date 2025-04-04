@@ -1,27 +1,23 @@
 // solanaService.ts  
 // Solana connection, NFT minting, smart contract methods
-import { Metaplex, keypairIdentity, bundlrStorage } from '@metaplex-foundation/js';
+import { Metaplex, keypairIdentity } from '@metaplex-foundation/js';
 import { Connection, clusterApiUrl, Keypair, PublicKey } from '@solana/web3.js';
 import axios from "axios";
-
-
 
 // 🔗 Connect to Solana Devnet
 const rpcUrl = clusterApiUrl('devnet'); // ✅ Define rpcUrl
 const connection = new Connection(rpcUrl, 'confirmed');
 
-// 🔑 Load Phantom wallet from .env
-const secretKey = Uint8Array.from(JSON.parse(import.meta.env.PINATA_API_KEY));
-const wallet = Keypair.fromSecretKey(secretKey);
+// Convert secret key string to Uint8Array
+if (!process.env.NEXT_PUBLIC_SOLANA_SECRET_KEY) {
+  throw new Error('NEXT_PUBLIC_SOLANA_SECRET_KEY environment variable is not defined');
+}
+const secretKeyArray = JSON.parse(process.env.NEXT_PUBLIC_SOLANA_SECRET_KEY);
+const wallet = Keypair.fromSecretKey(Uint8Array.from(secretKeyArray));
 
 // 🏗️ Initialize Metaplex
 const metaplex = Metaplex.make(connection)
-  .use(keypairIdentity(wallet))
-  .use(bundlrStorage({
-    address: 'https://devnet.bundlr.network',
-    providerUrl: rpcUrl, // ✅ Now it has a value
-    timeout: 60000,
-  }));
+  .use(keypairIdentity(wallet));
 
 export interface MedicalNFTMetadata {
   patientName: string;
@@ -75,17 +71,7 @@ export const mintMedicalNFT = async (metadata: MedicalNFTMetadata) => {
   }
 };
 
-export const getNFTMetadata = async (mintAddress: string) => {
-  try {
-    const nft = await metaplex.nfts().findByMint({ mintAddress: new PublicKey(mintAddress) });
-    return nft.json;
-  } catch (error) {
-    console.error('Error fetching metadata:', error);
-    throw error;
-  }
-};
-
-const walletAddress = "GGJAXBBugajRsrovdqYiDtevoSo9RUwhJHTPUgUvTg3r";
+// const walletAddress = "GGJAXBBugajRsrovdqYiDtevoSo9RUwhJHTPUgUvTg3r";
 
 export const fetchMedicalReports = async (walletAddress: string) => {
   try {
@@ -97,6 +83,7 @@ export const fetchMedicalReports = async (walletAddress: string) => {
     // Process each NFT to extract metadata
     const medicalReports = await Promise.all(
       nfts.map(async (nft) => {
+        if (!('uri' in nft) || !('address' in nft)) return null;
         try {
           // Fetch metadata from IPFS
           const metadataResponse = await axios.get(nft.uri);

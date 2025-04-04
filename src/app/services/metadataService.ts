@@ -1,28 +1,23 @@
 // metadataService.ts    
 // Fetch NFT metadata & report details
 import axios from 'axios';
-import { Metaplex, keypairIdentity, bundlrStorage } from '@metaplex-foundation/js';
+import { Metaplex, keypairIdentity } from '@metaplex-foundation/js';
 import { Connection, clusterApiUrl, PublicKey, Keypair } from '@solana/web3.js';
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 // 🔗 Connect to Solana Devnet
 const rpcUrl = clusterApiUrl('devnet'); // ✅ Define rpcUrl
 const connection = new Connection(rpcUrl, 'confirmed');
 
 // 🔑 Load Phantom wallet from .env
+if (!process.env.PRIVATE_KEY) {
+    throw new Error('PRIVATE_KEY environment variable is not defined');
+}
 const secretKey = Uint8Array.from(JSON.parse(process.env.PRIVATE_KEY));
 const wallet = Keypair.fromSecretKey(secretKey);
 
 // 🏗️ Initialize Metaplex
 const metaplex = Metaplex.make(connection)
-  .use(keypairIdentity(wallet))
-  .use(bundlrStorage({
-    address: 'https://devnet.bundlr.network',
-    providerUrl: rpcUrl, // ✅ Now it has a value
-    timeout: 60000,
-  }));
+  .use(keypairIdentity(wallet));
 /**
  * Fetches metadata from IPFS/Arweave using the NFT mint address.
  * @param mintAddress - The mint address of the NFT.

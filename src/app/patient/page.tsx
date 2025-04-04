@@ -81,7 +81,31 @@ const PatientDashboard = () => {
     });
   };
 
+
   const walletAddress = "GGJAXBBugajRsrovdqYiDtevoSo9RUwhJHTPUgUvTg3r";
+  const [reports, setReports] = useState<any[]>([]);
+  console.log("Medical Reports:", reports);
+
+  const fetchdata = async () => {
+    try {
+      const response = await fetch(`/api/solana?walletAddress=${walletAddress}`);
+      const data = await response.json();
+      if (data.success && data.nfts) {
+        setReports(data.nfts);
+        toast({
+          title: "Success",
+          description: "Medical reports fetched successfully",
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching medical reports:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch medical reports",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="relative min-h-screen">
@@ -113,15 +137,18 @@ const PatientDashboard = () => {
                   />
                   <Button variant="secondary">Search</Button>
                   <Dialog>
-                    <DialogTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-pink-500 dark:from-purple-500 dark:to-pink-400 text-white dark:text-white hover:opacity-90"
-                      >
-                        <Upload className="h-5 w-5" />
-                        <span>New Report</span>
-                      </Button>
-                    </DialogTrigger>
+                    <div className="flex gap-2">
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-pink-500 dark:from-purple-500 dark:to-pink-400 text-white dark:text-white hover:opacity-90"
+                        >
+                          <Upload className="h-5 w-5" />
+                          <span>New Report</span>
+                        </Button>
+                      </DialogTrigger>
+                      <Button onClick={fetchdata}>Fetch Reports</Button>
+                    </div>
                     <DialogContent className="bg-white dark:bg-gray-900">
                     <DialogHeader>
                         <DialogTitle>Upload New Report</DialogTitle>
@@ -216,6 +243,47 @@ const PatientDashboard = () => {
                         </Button>
                       </div>
                     </motion.div>
+                  ))}
+                  {reports.map((report, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    className="p-6 rounded-lg border border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl hover:scale-105 transition-all"
+                  >
+                    <div className="aspect-w-16 aspect-h-9 mb-4">
+                    <div className="rounded-lg bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 p-4">
+                      <FileText className="h-8 w-8 text-purple-600 dark:text-purple-300" />
+                    </div>
+                    </div>
+                    <h3 className="font-medium text-gray-900 dark:text-gray-100">
+                    {report.name || `Medical Report #${i + 1}`}
+                    </h3>
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    Created: {new Date(report.created_at).toLocaleDateString()}
+                    </p>
+                    <div className="mt-4 flex justify-end space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleViewReport(i)}
+                      className="border-gray-200 dark:border-gray-800"
+                    >
+                      <Eye className="mr-2 h-4 w-4" />
+                      View
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDownloadReport(i)}
+                      className="border-gray-200 dark:border-gray-800"
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      Download
+                    </Button>
+                    </div>
+                  </motion.div>
                   ))}
                 </div>
               </div>

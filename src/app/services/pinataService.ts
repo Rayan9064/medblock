@@ -34,7 +34,7 @@ export const uploadToPinata = async (file: File) => {
     return ipfsHash;
   } catch (error) {
     if (error instanceof Error) {
-      console.error("❌ Error uploading to Pinata:", (error as any).response?.data || error.message);
+      console.error("❌ Error uploading to Pinata:", (error as { response?: { data: unknown } }).response?.data || error.message);
     } else {
       console.error("❌ Error uploading to Pinata:", error);
     }

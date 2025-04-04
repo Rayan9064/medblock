@@ -3,6 +3,7 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import { ChevronRight } from "lucide-react"
 import { ButtonColorful } from "./ui/button-colorful"
+// import Image from "next/image";
 
 interface HeroSectionProps extends React.HTMLAttributes<HTMLDivElement> {
   title?: string
@@ -67,12 +68,12 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
         gradient: "and Instant Medical Records on Blockchain.",
       },
       description = "Empowering patients and healthcare providers with secure, tamper-proof medical records. Access your health data anytime, anywhere.",
-      ctaText = "Get Started",
+      ctaText = "I am Patient",
       ctaHref = "#",
-      bottomImage = {
-        light: "https://farmui.vercel.app/dashboard-light.png",
-        dark: "https://farmui.vercel.app/dashboard.png",
-      },
+      // bottomImage = {
+      //   light: "https://farmui.vercel.app/dashboard-light.png",
+      //   dark: "https://farmui.vercel.app/dashboard.png",
+      // },
       gridOptions,
       ...props
     },
@@ -116,20 +117,21 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
                 <ButtonColorful/>
               </div>
             </div>
-            {bottomImage && (
+            {/* {bottomImage && (
               <div className="mt-32 mx-10 relative z-10">
-                <img
+                <Image
                   src={bottomImage.light}
                   className="w-full shadow-lg rounded-lg border border-gray-200 dark:hidden"
                   alt="Dashboard preview"
+                  width={}
                 />
-                <img
+                <Image
                   src={bottomImage.dark}
                   className="hidden w-full shadow-lg rounded-lg border border-gray-800 dark:block"
                   alt="Dashboard preview"
                 />
               </div>
-            )}
+            )} */}
           </div>
         </section>
       </div>

@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { ArrowUpRight } from "lucide-react";
+// import { ArrowUpRight } from "lucide-react";
 
 interface ButtonColorfulProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     label?: string;
@@ -8,7 +8,7 @@ interface ButtonColorfulProps extends React.ButtonHTMLAttributes<HTMLButtonEleme
 
 export function ButtonColorful({
     className,
-    label = "Learn More",
+    label = "I am a Doctor",
     ...props
 }: ButtonColorfulProps) {
     return (
@@ -35,7 +35,7 @@ export function ButtonColorful({
             {/* Content */}
             <div className="relative flex items-center justify-center gap-2">
                 <span className="text-white dark:text-zinc-900">{label}</span>
-                <ArrowUpRight className="w-3.5 h-3.5 text-white/90 dark:text-zinc-900/90" />
+                {/* <ArrowUpRight className="w-3.5 h-3.5 text-white/90 dark:text-zinc-900/90" /> */}
             </div>
         </Button>
     );
