@@ -1,0 +1,4 @@
+node_modules
+.next
+public
+src/components/ui/*  # Add this if the error is inside this folder
