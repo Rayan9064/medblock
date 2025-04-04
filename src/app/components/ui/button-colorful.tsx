@@ -33,7 +33,10 @@ export function ButtonColorful({
             />
 
             {/* Content */}
-            <div className="relative flex items-center justify-center gap-2">
+            <div 
+                className="relative flex items-center justify-center gap-2"
+                onClick={() => window.location.href = '/doctor'}
+            >
                 <span className="text-white dark:text-zinc-900">{label}</span>
                 {/* <ArrowUpRight className="w-3.5 h-3.5 text-white/90 dark:text-zinc-900/90" /> */}
             </div>

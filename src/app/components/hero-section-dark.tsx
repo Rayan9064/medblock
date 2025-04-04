@@ -69,7 +69,7 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
       },
       description = "Empowering patients and healthcare providers with secure, tamper-proof medical records. Access your health data anytime, anywhere.",
       ctaText = "I am Patient",
-      ctaHref = "#",
+      ctaHref = "patient",
       // bottomImage = {
       //   light: "https://farmui.vercel.app/dashboard-light.png",
       //   dark: "https://farmui.vercel.app/dashboard.png",
