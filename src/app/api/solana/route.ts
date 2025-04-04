@@ -8,11 +8,11 @@ const rpcUrl = clusterApiUrl('devnet');
 const connection = new Connection(rpcUrl, 'confirmed');
 
 // 🔑 Load Solana wallet from environment variables
-if (!process.env.NEXT_PUBLIC_SOLANA_SECRET_KEY) {
-  throw new Error('NEXT_PUBLIC_SOLANA_SECRET_KEY environment variable is not defined');
-}
+// if (!process.env.NEXT_PUBLIC_SOLANA_SECRET_KEY) {
+//   throw new Error('NEXT_PUBLIC_SOLANA_SECRET_KEY environment variable is not defined');
+// }
 
-const secretKeyArray = JSON.parse(process.env.NEXT_PUBLIC_SOLANA_SECRET_KEY);
+const secretKeyArray = JSON.parse(process.env.NEXT_PUBLIC_SOLANA_SECRET_KEY!);
 const wallet = Keypair.fromSecretKey(Uint8Array.from(secretKeyArray));
 
 // 🎭 Initialize Metaplex
