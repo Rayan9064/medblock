@@ -1,72 +1,62 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Metaplex, keypairIdentity } from '@metaplex-foundation/js';
-import { Connection, clusterApiUrl, Keypair, PublicKey } from '@solana/web3.js';
-// import axios from 'axios';
-
-// 🔗 Connect to Solana Devnet
-const rpcUrl = clusterApiUrl('devnet');
-const connection = new Connection(rpcUrl, 'confirmed');
-
-// 🔑 Load Solana wallet from environment variables
-if (!process.env.NEXT_PUBLIC_SOLANA_SECRET_KEY) {
-  throw new Error('NEXT_PUBLIC_SOLANA_SECRET_KEY environment variable is not defined');
-}
-
-const secretKeyArray = JSON.parse(process.env.NEXT_PUBLIC_SOLANA_SECRET_KEY!);
-const wallet = Keypair.fromSecretKey(Uint8Array.from(secretKeyArray));
-
-// 🎭 Initialize Metaplex
-const metaplex = Metaplex.make(connection).use(keypairIdentity(wallet));
+import { mintMedicalNFT } from '../../services/solanaService';
 
 /**
  * POST: Mint Medical NFT (Medical Record)
  */
 export async function POST(req: NextRequest) {
+  console.log("🚀 Starting NFT minting process for medical report");
   try {
     const metadata = await req.json();
-
-    if (!metadata.patientName || !metadata.doctorName || !metadata.date || !metadata.reportName || !metadata.imageUrl || !metadata.reportUrl) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-    }
-
-    // 🏥 Medical Report Metadata
-    const medicalMetadata = {
-      name: metadata.reportName,
-      symbol: "MEDNFT",
-      description: `Patient: ${metadata.patientName} - Confidential Medical Record`,
-      image: metadata.imageUrl,
-      attributes: [
-        { trait_type: "Patient", value: metadata.patientName },
-        { trait_type: "Doctor", value: metadata.doctorName },
-        { trait_type: "Date", value: metadata.date }
-      ],
-      properties: {
-        files: [{ uri: metadata.reportUrl, type: "application/pdf" }]
-      }
-    };
-
-    console.log("⏳ Uploading Metadata to IPFS...");
-    const { uri } = await metaplex.nfts().uploadMetadata(medicalMetadata);
-    console.log("✅ Metadata uploaded to IPFS:", uri);
-
-    console.log("⏳ Minting Medical Report NFT...");
-    const { nft } = await metaplex.nfts().create({
-      uri: uri,
-      name: medicalMetadata.name,
-      sellerFeeBasisPoints: 0, // No royalties
+    console.log("📋 Received metadata for NFT minting:", {
+      reportName: metadata.reportName,
+      patientName: metadata.patientName,
+      doctorName: metadata.doctorName,
+      reportType: metadata.reportType || "General",
+      date: metadata.date,
+      isPrivate: metadata.isPrivate || false
     });
 
+    // Validate required fields
+    const requiredFields = ['patientName', 'doctorName', 'date', 'reportName', 'imageUrl', 'reportUrl', 'patientAddress'];
+    const missingFields = requiredFields.filter(field => !metadata[field]);
+    
+    if (missingFields.length > 0) {
+      console.error("❌ Missing required fields:", missingFields.join(', '));
+      return NextResponse.json({ error: 'Missing required fields', field: missingFields.join(', ') }, { status: 400 });
+    }
+    console.log("✅ All required fields present in metadata");
+
+    // Mint the NFT using our improved solanaService
+    console.log("🔐 Minting medical report NFT with transaction retry logic");
+    const { nftAddress, explorerUrl, metadataUri } = await mintMedicalNFT(metadata);
+    
     console.log("🎉 Medical Report NFT Minted Successfully!");
-    console.log("🔗 NFT Mint Address:", nft.address.toString());
+    console.log("🔗 NFT Mint Address:", nftAddress);
+    console.log("🌐 NFT Explorer URL:", explorerUrl);
+    console.log("📄 Metadata URI:", metadataUri);
+
+    // For private files, log that we're using Pinata private storage with JWT
+    if (metadata.isPrivate) {
+      console.log("🔒 Report file is private, using Pinata JWT authentication for access control");
+      console.log("🔑 Access method: pinata_authenticated (JWT)");
+    } else {
+      console.log("🌐 Report file is public, no authentication needed");
+    }
 
     return NextResponse.json({
       success: true,
-      nftAddress: nft.address.toString(),
-      explorerUrl: `https://explorer.solana.com/address/${nft.address.toString()}?cluster=devnet`
+      nftAddress,
+      explorerUrl,
+      metadataUri,
+      isPrivate: metadata.isPrivate || false,
+      accessMethod: metadata.isPrivate ? "pinata_authenticated" : "public"
     }, { status: 200 });
   } catch (error: unknown) {
     console.error("❌ Error minting NFT:", error);
-    return NextResponse.json({ error: error instanceof Error ? error.message: 'Unknown error' }, { status: 500 });
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+    console.error("❌ Error details:", errorMsg);
+    return NextResponse.json({ error: errorMsg }, { status: 500 });
   }
 }
 
@@ -82,40 +72,17 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Wallet address is required' }, { status: 400 });
     }
 
-    const owner = new PublicKey(walletAddress);
-    const nfts = await metaplex.nfts().findAllByOwner({ owner });
+    const medicalReports = await import('../../services/solanaService')
+      .then(module => module.fetchMedicalReports(walletAddress));
 
-    return NextResponse.json({ success: true, nfts }, { status: 200 });
-    // const medicalReports = await Promise.all(
-    //   nfts.map(async (nft) => {
-    //   if (!nft.uri || !nft.address) return null;
-    //   try {
-    //     const metadataResponse = await axios.get(nft.uri);
-    //     const metadata = metadataResponse.data;
-
-    //     return {
-    //     name: nft.name || "Unknown Report",
-    //     description: metadata.description || "No description",
-    //     patient: metadata.attributes?.find((attr: any) => attr.trait_type === "Patient")?.value || "Unknown",
-    //     doctor: metadata.attributes?.find((attr: any) => attr.trait_type === "Doctor")?.value || "Unknown",
-    //     date: metadata.attributes?.find((attr: any) => attr.trait_type === "Date")?.value || "Unknown",
-    //     image: metadata.image || "",
-    //     uri: nft.uri,
-    //     fileUrl: metadata.properties?.files[0]?.uri || "",
-    //     nftAddress: nft.address.toString(),
-    //     mintAddress: nft.mintAddress,
-    //     creators: nft.creators
-    //     };
-    //   } catch (error) {
-    //     console.error(`❌ Error fetching metadata for NFT: ${nft.address.toString()}`, error);
-    //     return null;
-    //   }
-    //   })
-    // );
-
-    // return NextResponse.json({ success: true, medicalReports: medicalReports.filter((report) => report !== null) }, { status: 200 });
+    return NextResponse.json({ 
+      success: true, 
+      medicalReports 
+    }, { status: 200 });
   } catch (error: unknown) {
     console.error("❌ Error fetching NFTs:", error);
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
+    return NextResponse.json({ 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    }, { status: 500 });
   }
 }

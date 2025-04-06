@@ -1,57 +1,96 @@
 "use client";
-import { uploadToPinata } from "@/services/pinataService";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, Download, FileText, Upload } from "lucide-react";
-// import PatientNavbar from "@/components/PatientDashboard/Navbar";
-// import { fetchMedicalReports } from "@/services/solanaService";
+import { UploadDialog } from "@/components/PatientDashboard/UploadDialog";
+import { ReportCard } from "@/components/PatientDashboard/ReportCard";
+import { SearchBar } from "@/components/PatientDashboard/SearchBar";
+import { ProfileForm } from "@/components/PatientDashboard/ProfileForm";
+import ViewReportDialog from "@/components/PatientDashboard/ViewReportDialog";
+import { Button } from "@/components/ui/button";
+
+interface Report {
+  name?: string;
+  created_at: number;
+  reportName?: string;
+  patientName?: string;
+  doctorName?: string;
+  reportType?: string;
+  reportDate?: string;
+  reportUrl?: string;
+  imageUrl?: string;
+  ipfsHash?: string;
+  encryptionKey?: string;
+  [key: string]: string | number | boolean | undefined;
+}
 
 const PatientDashboard = () => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [ipfsHash, setIpfsHash] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [reports, setReports] = useState<Report[]>([]);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
 
-  // Handle file selection
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files.length > 0) {
-      setSelectedFile(event.target.files[0]);
-    }
-  };
+  const walletAddress = "GGJAXBBugajRsrovdqYiDtevoSo9RUwhJHTPUgUvTg3r";
 
-  // Upload file to Pinata
-  const handleUploadReport = async () => {
-    if (!selectedFile) {
-      toast({ title: "No File Selected", description: "Please select a file to upload." });
-      return;
-    }
-
-    setUploading(true);
-
+  const fetchdata = async () => {
+    setIsLoading(true);
     try {
-      const hash = await uploadToPinata(selectedFile);
-      setIpfsHash(hash);
+      const response = await fetch(`/api/solana?walletAddress=${walletAddress}`);
+      const data = await response.json();
+      
+      console.log("API Response:", data); // For debugging
+      
+      if (data.success) {
+        // Check if response contains medicalReports (correct property name from API)
+        const nfts = data.medicalReports || [];
+        
+        // Process NFTs to ensure they have created_at property
+        const processedNfts = nfts.map((nft: any) => ({
+          ...nft,
+          created_at: nft.created_at || Date.now(),
+          reportName: nft.name || "Unnamed Report", // Ensure reportName exists
+          patientName: nft.patient || "Unknown Patient",
+          doctorName: nft.doctor || "Unknown Doctor",
+          reportDate: nft.date || "Unknown Date",
+          reportUrl: nft.fileUrl || "",
+          imageUrl: nft.image || "",
+          ipfsHash: nft.ipfsHash || ""
+        }));
+        
+        console.log("Processed NFTs:", processedNfts);
+        setReports(processedNfts);
+        
+        toast({
+          title: "Success",
+          description: `Found ${processedNfts.length} medical report(s)`,
+        });
+      } else {
+        console.error("API returned error:", data.error);
+        setReports([]);
+        toast({
+          title: "Warning",
+          description: data.error || "No reports returned from API",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching medical reports:", error);
       toast({
-        title: "Upload Successful",
-        description: `Report uploaded to IPFS. Hash: ${hash}`,
-      });
-    } catch (error: unknown) {
-      console.error("Upload error:", error);
-      toast({
-        title: "Upload Failed",
-        description: "An error occurred while uploading the report.",
+        title: "Error",
+        description: "Failed to fetch medical reports",
         variant: "destructive",
       });
     } finally {
-      setUploading(false);
+      setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchdata();
+  }, []);
 
   const handleGrantAccess = (doctorId: string) => {
     toast({
@@ -68,48 +107,133 @@ const PatientDashboard = () => {
     });
   };
 
-  const handleViewReport = (reportId: number) => {
-    toast({
-      title: "Opening Report",
-      description: `Loading medical report #${reportId}`,
-    });
-  };
-
-  const handleDownloadReport = (reportId: number) => {
-    toast({
-      title: "Downloading Report",
-      description: `Preparing medical report #${reportId} for download`,
-    });
-  };
-
-  const walletAddress = "GGJAXBBugajRsrovdqYiDtevoSo9RUwhJHTPUgUvTg3r";
-  
-  interface Report {
-    name?: string;
-    created_at: number;
-    [key: string]: string | number | boolean | undefined;
-  }
-  
-  const [reports, setReports] = useState<Report[]>([]);
-  console.log("Medical Reports:", reports);
-  console.log("Medical Reports:", reports);
-
-  const fetchdata = async () => {
+  const handleViewReport = async (reportId: number) => {
     try {
-      const response = await fetch(`/api/solana?walletAddress=${walletAddress}`);
-      const data = await response.json();
-      if (data.success && data.nfts) {
-        setReports(data.nfts);
-        toast({
-          title: "Success",
-          description: "Medical reports fetched successfully",
-        });
-      }
+      const report = reports[reportId];
+      if (!report) throw new Error("Report not found");
+
+      // Set the selected report and open the dialog
+      setSelectedReport(report);
+      setViewDialogOpen(true);
+      
+      toast({
+        title: "Opening Report",
+        description: `Loading medical report details`,
+      });
     } catch (error) {
-      console.error("Error fetching medical reports:", error);
       toast({
         title: "Error",
-        description: "Failed to fetch medical reports",
+        description: "Failed to open report",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDownloadReport = async (reportId: number) => {
+    try {
+      const report = reports[reportId];
+      if (!report) throw new Error("Report not found");
+
+      toast({
+        title: "Downloading Report",
+        description: `Preparing medical report for download`,
+      });
+      
+      if (!report.reportUrl) {
+        throw new Error("Report URL not available");
+      }
+      
+      if (!report.encryptionKey) {
+        // No encryption key - just open the URL
+        window.open(report.reportUrl, '_blank');
+        toast({
+          title: "Download Started",
+          description: "Your report is being downloaded (encrypted)",
+          variant: "default",
+        });
+        return;
+      }
+      
+      // Fetch the encrypted file from IPFS
+      console.log("Fetching encrypted file from:", report.reportUrl);
+      const response = await fetch(report.reportUrl, {
+        method: 'GET',
+        cache: 'no-cache', // Avoid caching issues
+        headers: {
+          'Accept': '*/*'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch report: ${response.statusText}`);
+      }
+      
+      const encryptedBlob = await response.blob();
+      console.log("Encrypted blob received, size:", encryptedBlob.size, "bytes");
+      
+      if (encryptedBlob.size === 0) {
+        throw new Error("Received empty file from IPFS");
+      }
+      
+      // Import the encryption key
+      console.log("Importing encryption key...");
+      const binaryStr = atob(report.encryptionKey);
+      const bytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) {
+        bytes[i] = binaryStr.charCodeAt(i);
+      }
+      
+      const cryptoKey = await crypto.subtle.importKey(
+        "raw",
+        bytes.buffer,
+        { name: "AES-GCM", length: 256 },  // Must exactly match key generation params
+        false,
+        ["decrypt"]
+      );
+      
+      // Decrypt the file using our decryptFile function
+      console.log("Decrypting file...");
+      const { decryptFile } = await import('@/services/encryptionService');
+      const decryptedData = await decryptFile(encryptedBlob, cryptoKey);
+      
+      // Set an appropriate MIME type based on the file extension or report type
+      let mimeType = "application/pdf"; // Default to PDF
+      
+      if (report.reportUrl.endsWith(".jpg") || report.reportUrl.endsWith(".jpeg")) {
+        mimeType = "image/jpeg";
+      } else if (report.reportUrl.endsWith(".png")) {
+        mimeType = "image/png";
+      } else if (report.reportUrl.endsWith(".docx")) {
+        mimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+      }
+      
+      // Create a new blob with the correct MIME type
+      const decrypted = new Blob([decryptedData], { type: mimeType });
+      console.log("Decryption complete, blob size:", decrypted.size, "bytes");
+      
+      // Create a download link for the decrypted file
+      const downloadUrl = URL.createObjectURL(decrypted);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = report.reportName || 'medical-report';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      // Clean up the URL object
+      setTimeout(() => {
+        URL.revokeObjectURL(downloadUrl);
+      }, 100);
+      
+      toast({
+        title: "Download Complete",
+        description: "Your decrypted report has been downloaded",
+      });
+    } catch (error) {
+      console.error("Error downloading report:", error);
+      toast({
+        title: "Error",
+        description: "Failed to download and decrypt report",
         variant: "destructive",
       });
     }
@@ -118,6 +242,13 @@ const PatientDashboard = () => {
   return (
     <div className="relative min-h-screen">
       <div className="absolute top-0 z-[0] h-screen w-screen bg-medical-950/10 dark:bg-medical-950/10 bg-[radial-gradient(ellipse_20%_80%_at_50%_-20%,rgba(120,119,198,0.15),rgba(255,255,255,0))] dark:bg-[radial-gradient(ellipse_20%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]" />
+      
+      {/* View Report Dialog */}
+      <ViewReportDialog 
+        isOpen={viewDialogOpen}
+        onClose={() => setViewDialogOpen(false)}
+        report={selectedReport}
+      />
       
       <div className="container relative mx-auto px-4 py-8 z-10">
         <motion.div
@@ -135,164 +266,26 @@ const PatientDashboard = () => {
 
             <TabsContent value="reports" className="mt-6 bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl rounded-lg border border-gray-200 dark:border-gray-800 p-6">
               <div className="space-y-6">
-                <div className="flex items-center space-x-4">
-                  <Input
-                    type="text"
-                    placeholder="Search reports..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="max-w-sm bg-white/70 dark:bg-gray-900/70"
-                  />
-                  <Button variant="secondary">Search</Button>
-                  <Dialog>
-                    <div className="flex gap-2">
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-pink-500 dark:from-purple-500 dark:to-pink-400 text-white dark:text-white hover:opacity-90"
-                        >
-                          <Upload className="h-5 w-5" />
-                          <span>New Report</span>
-                        </Button>
-                      </DialogTrigger>
-                      <Button onClick={fetchdata}>Fetch Reports</Button>
-                    </div>
-                    <DialogContent className="bg-white dark:bg-gray-900">
-                    <DialogHeader>
-                        <DialogTitle>Upload New Report</DialogTitle>
-                        <DialogDescription>
-                          Choose a medical report file to upload to the system.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="grid gap-4 py-4">
-                        <Input type="file" onChange={handleFileChange} className="max-w-sm" />
-                        {selectedFile && (
-                          <p className="text-sm text-gray-500">
-                            Selected file: {selectedFile.name}
-                          </p>
-                        )}
-                        {ipfsHash && (
-                          <div className="text-sm text-gray-500">
-                            <p>File uploaded successfully!</p>
-                            <a
-                              href={`https://gateway.pinata.cloud/ipfs/${ipfsHash}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-medical-600 hover:underline"
-                            >
-                              View on IPFS
-                            </a>
-                          </div>
-                        )}
-                      </div>
-                      <DialogFooter>
-                        <Button
-                          onClick={async () => {
-                            await handleUploadReport();
-                            if (ipfsHash) {
-                              setTimeout(() => {
-                                setSelectedFile(null);
-                                const dialogClose = document.querySelector('[data-dialog-close]');
-                                if (dialogClose instanceof HTMLElement) {
-                                  dialogClose.click();
-                                }
-                              }, 2000);
-                            }
-                          }}
-                          disabled={uploading}
-                          className="flex items-center space-x-2 bg-blue-600 text-black hover:bg-blue-700 hover:text-white dark:bg-medical-600 dark:text-white dark:hover:bg-medical-500"
-                        >
-                          <Upload className="h-5 w-5" />
-                          <span>{uploading ? "Uploading..." : "Upload Report"}</span>
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
+                <div className="flex items-center justify-between">
+                  <SearchBar value={searchQuery} onChange={setSearchQuery} />
+                  <UploadDialog />
                 </div>
-
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {[1, 2, 3].map((i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.1 }}
-                      className="p-6 rounded-lg border border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl hover:scale-105 transition-all"
-                    >
-                      <div className="aspect-w-16 aspect-h-9 mb-4">
-                        <div className="rounded-lg bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 p-4">
-                          <FileText className="h-8 w-8 text-purple-600 dark:text-purple-300" />
-                        </div>
-                      </div>
-                      <h3 className="font-medium text-gray-900 dark:text-gray-100">
-                        Medical Report #{i}
-                      </h3>
-                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        Last updated: March {i}, 2024
-                      </p>
-                      <div className="mt-4 flex justify-end space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewReport(i)}
-                          className="border-gray-200 dark:border-gray-800"
-                        >
-                          <Eye className="mr-2 h-4 w-4" />
-                          View
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDownloadReport(i)}
-                          className="border-gray-200 dark:border-gray-800"
-                        >
-                          <Download className="mr-2 h-4 w-4" />
-                          Download
-                        </Button>
-                      </div>
-                    </motion.div>
-                  ))}
-                  {reports.map((report, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.1 }}
-                    className="p-6 rounded-lg border border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl hover:scale-105 transition-all"
-                  >
-                    <div className="aspect-w-16 aspect-h-9 mb-4">
-                    <div className="rounded-lg bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 p-4">
-                      <FileText className="h-8 w-8 text-purple-600 dark:text-purple-300" />
-                    </div>
-                    </div>
-                    <h3 className="font-medium text-gray-900 dark:text-gray-100">
-                    {report.name || `Medical Report #${i + 1}`}
-                    </h3>
-                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    Created: {new Date(report.created_at).toLocaleDateString()}
-                    </p>
-                    <div className="mt-4 flex justify-end space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleViewReport(i)}
-                      className="border-gray-200 dark:border-gray-800"
-                    >
-                      <Eye className="mr-2 h-4 w-4" />
-                      View
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDownloadReport(i)}
-                      className="border-gray-200 dark:border-gray-800"
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      Download
-                    </Button>
-                    </div>
-                  </motion.div>
-                  ))}
+                  {isLoading ? (
+                    <div className="col-span-full text-center py-8">Loading reports...</div>
+                  ) : reports.length === 0 ? (
+                    <div className="col-span-full text-center py-8">No medical reports found</div>
+                  ) : (
+                    reports.map((report, i) => (
+                      <ReportCard
+                        key={i}
+                        report={report}
+                        index={i}
+                        onView={handleViewReport}
+                        onDownload={handleDownloadReport}
+                      />
+                    ))
+                  )}
                 </div>
               </div>
             </TabsContent>
@@ -361,25 +354,9 @@ const PatientDashboard = () => {
             </TabsContent>
 
             <TabsContent value="profile" className="mt-6 bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl rounded-lg border border-gray-200 dark:border-gray-800 p-6">
-            <div className="space-y-6">
+              <div className="space-y-6">
                 <h3 className="text-lg font-medium">Profile Information</h3>
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">
-                      Full Name
-                    </label>
-                    <Input placeholder="John Doe" className="mt-1" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">
-                      Age
-                    </label>
-                    <Input type="number" placeholder="30" className="mt-1" />
-                  </div>
-                </div>
-                <div className="flex justify-end">
-                  <Button className="btn-primary">Save Changes</Button>
-                </div>
+                <ProfileForm />
               </div>
             </TabsContent>
           </Tabs>
