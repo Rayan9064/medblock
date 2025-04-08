@@ -104,7 +104,7 @@ const PatientDashboard = () => {
 
   return (
     <div className="relative min-h-screen">
-      <div className="absolute top-0 z-[0] h-screen w-screen bg-medical-950/10 dark:bg-medical-950/10 bg-[radial-gradient(ellipse_20%_80%_at_50%_-20%,rgba(120,119,198,0.15),rgba(255,255,255,0))] dark:bg-[radial-gradient(ellipse_20%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]" />
+      <div className="absolute top-0 z-[0] h-screen w-screen bg-purple-950/10 dark:bg-purple-950/10 bg-[radial-gradient(ellipse_20%_80%_at_50%_-20%,rgba(120,119,198,0.15),rgba(255,255,255,0))] dark:bg-[radial-gradient(ellipse_20%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]" />
       
       <div className="container relative mx-auto px-4 py-8 z-10">
         <motion.div
@@ -114,13 +114,13 @@ const PatientDashboard = () => {
           className="space-y-8"
         >
           <Tabs defaultValue="reports" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-white/20 dark:bg-gray-900/20 backdrop-blur-xl">
-              <TabsTrigger value="reports">My Reports</TabsTrigger>
-              <TabsTrigger value="access">Doctor Access</TabsTrigger>
-              <TabsTrigger value="profile">Profile</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3 bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border border-white/20 dark:border-gray-800/20 rounded-lg">
+              <TabsTrigger value="reports" className="data-[state=active]:bg-white/20 dark:data-[state=active]:bg-gray-800/20">My Reports</TabsTrigger>
+              <TabsTrigger value="access" className="data-[state=active]:bg-white/20 dark:data-[state=active]:bg-gray-800/20">Doctor Access</TabsTrigger>
+              <TabsTrigger value="profile" className="data-[state=active]:bg-white/20 dark:data-[state=active]:bg-gray-800/20">Profile</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="reports" className="mt-6 bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl rounded-lg border border-gray-200 dark:border-gray-800 p-6">
+            <TabsContent value="reports" className="mt-6">
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4 flex-1">
@@ -129,7 +129,7 @@ const PatientDashboard = () => {
                       variant="outline" 
                       onClick={fetchReports}
                       disabled={isLoading}
-                      className="border-gray-200 dark:border-gray-800"
+                      className="bg-white/20 dark:bg-gray-900/20 backdrop-blur-xl border border-white/20 dark:border-gray-800/20 hover:bg-white/30 dark:hover:bg-gray-800/30"
                     >
                       {isLoading ? "Refreshing..." : "Refresh"}
                     </Button>
@@ -154,58 +154,54 @@ const PatientDashboard = () => {
               </div>
             </TabsContent>
 
-            <TabsContent value="access" className="mt-6 bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl rounded-lg border border-gray-200 dark:border-gray-800 p-6">
-            <div className="space-y-6">
-                <h3 className="text-lg font-medium">Doctor Access Requests</h3>
-                <div className="divide-y">
-                  {[1, 2].map((i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between py-4"
-                    >
-                      <div>
-                        <p className="font-medium">Dr. John Doe</p>
-                        <p className="text-sm text-gray-500">
-                          Requested access on March {i}, 2024
-                        </p>
+            <TabsContent value="access" className="mt-6">
+              <div className="space-y-6">
+                <div className="bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border border-white/20 dark:border-gray-800/20 rounded-lg p-6">
+                  <h3 className="text-lg font-medium mb-4">Doctor Access Requests</h3>
+                  <div className="divide-y divide-white/10 dark:divide-gray-800/10">
+                    {[1, 2].map((i) => (
+                      <div key={i} className="flex items-center justify-between py-4">
+                        <div>
+                          <p className="font-medium">Dr. John Doe</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Requested access on March {i}, 2024
+                          </p>
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="default"
+                            className="bg-gradient-to-r from-purple-600 to-pink-500 dark:from-purple-300 dark:to-orange-200 text-white"
+                            onClick={() => handleGrantAccess(`John Doe ${i}`)}
+                          >
+                            Grant Access
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="border-red-500/50 text-red-500 hover:bg-red-500/10"
+                            onClick={() => handleRevokeAccess(`John Doe ${i}`)}
+                          >
+                            Deny
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="default"
-                          className="btn-primary"
-                          onClick={() => handleGrantAccess(`John Doe ${i}`)}
-                        >
-                          Grant Access
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="text-red-600"
-                          onClick={() => handleRevokeAccess(`John Doe ${i}`)}
-                        >
-                          Deny
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
 
-                <div className="mt-8">
-                  <h3 className="text-lg font-medium">Currently Authorized Doctors</h3>
-                  <div className="mt-4 divide-y">
+                <div className="bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border border-white/20 dark:border-gray-800/20 rounded-lg p-6">
+                  <h3 className="text-lg font-medium mb-4">Currently Authorized Doctors</h3>
+                  <div className="divide-y divide-white/10 dark:divide-gray-800/10">
                     {[1].map((i) => (
-                      <div
-                        key={i}
-                        className="flex items-center justify-between py-4"
-                      >
+                      <div key={i} className="flex items-center justify-between py-4">
                         <div>
                           <p className="font-medium">Dr. Jane Smith</p>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
                             Access granted on March {i}, 2024
                           </p>
                         </div>
                         <Button
                           variant="outline"
-                          className="text-red-600"
+                          className="border-red-500/50 text-red-500 hover:bg-red-500/10"
                           onClick={() => handleRevokeAccess(`Jane Smith ${i}`)}
                         >
                           Revoke Access
@@ -217,9 +213,9 @@ const PatientDashboard = () => {
               </div>
             </TabsContent>
 
-            <TabsContent value="profile" className="mt-6 bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl rounded-lg border border-gray-200 dark:border-gray-800 p-6">
-              <div className="space-y-6">
-                <h3 className="text-lg font-medium">Profile Information</h3>
+            <TabsContent value="profile" className="mt-6">
+              <div className="bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border border-white/20 dark:border-gray-800/20 rounded-lg p-6">
+                <h3 className="text-lg font-medium mb-4">Profile Information</h3>
                 <ProfileForm />
               </div>
             </TabsContent>

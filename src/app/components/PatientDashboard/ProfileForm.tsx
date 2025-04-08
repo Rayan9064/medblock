@@ -2,30 +2,33 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { useForm } from "react-hook-form";
+import { Form } from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2, Save } from "lucide-react";
 
-interface ProfileFormData {
-  fullName: string;
-  age: string;
-  email: string;
-  phoneNumber: string;
-  address: string;
-}
-
-export const ProfileForm = () => {
+export function ProfileForm() {
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const [profileData, setProfileData] = useState<ProfileFormData>({
-    fullName: "",
-    age: "",
-    email: "",
-    phoneNumber: "",
-    address: "",
+
+  const form = useForm({
+    defaultValues: {
+      name: "",
+      email: "",
+      phone: "",
+      dob: "",
+      bloodGroup: "",
+      allergies: "",
+      medications: "",
+    },
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const onSubmit = async (data: any) => {
+    setIsLoading(true);
     try {
-      // TODO: Implement API call to update profile
+      // Submit profile data
       toast({
         title: "Success",
         description: "Profile updated successfully",
@@ -36,81 +39,113 @@ export const ProfileForm = () => {
         description: "Failed to update profile",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid gap-6 md:grid-cols-2">
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="name">Full Name</Label>
+            <Input
+              id="name"
+              {...form.register("name")}
+              className="bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border-white/20 dark:border-gray-800/20"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              {...form.register("email")}
+              className="bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border-white/20 dark:border-gray-800/20"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="phone">Phone Number</Label>
+            <Input
+              id="phone"
+              {...form.register("phone")}
+              className="bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border-white/20 dark:border-gray-800/20"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="dob">Date of Birth</Label>
+            <Input
+              id="dob"
+              type="date"
+              {...form.register("dob")}
+              className="bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border-white/20 dark:border-gray-800/20"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="bloodGroup">Blood Group</Label>
+            <Select {...form.register("bloodGroup")}>
+              <SelectTrigger className="bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border-white/20 dark:border-gray-800/20">
+                <SelectValue placeholder="Select blood group" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="A+">A+</SelectItem>
+                <SelectItem value="A-">A-</SelectItem>
+                <SelectItem value="B+">B+</SelectItem>
+                <SelectItem value="B-">B-</SelectItem>
+                <SelectItem value="O+">O+</SelectItem>
+                <SelectItem value="O-">O-</SelectItem>
+                <SelectItem value="AB+">AB+</SelectItem>
+                <SelectItem value="AB-">AB-</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
-            Full Name
-          </label>
-          <Input
-            value={profileData.fullName}
-            onChange={(e) => setProfileData(prev => ({ ...prev, fullName: e.target.value }))}
-            placeholder="John Doe"
-            className="mt-1"
+          <Label htmlFor="allergies">Allergies</Label>
+          <Textarea
+            id="allergies"
+            {...form.register("allergies")}
+            placeholder="List any allergies..."
+            className="min-h-[100px] bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border-white/20 dark:border-gray-800/20"
           />
         </div>
+
         <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
-            Age
-          </label>
-          <Input
-            type="number"
-            value={profileData.age}
-            onChange={(e) => setProfileData(prev => ({ ...prev, age: e.target.value }))}
-            placeholder="30"
-            className="mt-1"
+          <Label htmlFor="medications">Current Medications</Label>
+          <Textarea
+            id="medications"
+            {...form.register("medications")}
+            placeholder="List current medications..."
+            className="min-h-[100px] bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border-white/20 dark:border-gray-800/20"
           />
         </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
-            Email
-          </label>
-          <Input
-            type="email"
-            value={profileData.email}
-            onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
-            placeholder="john@example.com"
-            className="mt-1"
-          />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
-            Phone Number
-          </label>
-          <Input
-            type="tel"
-            value={profileData.phoneNumber}
-            onChange={(e) => setProfileData(prev => ({ ...prev, phoneNumber: e.target.value }))}
-            placeholder="+1 (555) 000-0000"
-            className="mt-1"
-          />
-        </div>
-      </div>
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
-          Address
-        </label>
-        <Input
-          value={profileData.address}
-          onChange={(e) => setProfileData(prev => ({ ...prev, address: e.target.value }))}
-          placeholder="123 Medical Street, City, Country"
-          className="mt-1"
-        />
-      </div>
-      <div className="flex justify-end">
+
         <Button 
           type="submit"
-          className="bg-gradient-to-r from-purple-600 to-pink-500 text-white hover:opacity-90"
+          disabled={isLoading}
+          className="w-full bg-gradient-to-r from-purple-600 to-pink-500 dark:from-purple-300 dark:to-orange-200 text-white border-0"
         >
-          Save Changes
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Updating...
+            </>
+          ) : (
+            <>
+              <Save className="mr-2 h-4 w-4" />
+              Save Changes
+            </>
+          )}
         </Button>
-      </div>
-    </form>
+      </form>
+    </Form>
   );
-};
+}
 
 export default ProfileForm;

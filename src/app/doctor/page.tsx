@@ -30,11 +30,10 @@ const DoctorDashboard = () => {
   };
 
   return (
-    <div className="min-h-screenabsolute top-0 z-[0] h-screen w-screen bg-medical-950/10 dark:bg-medical-950/10 bg-[radial-gradient(ellipse_20%_80%_at_50%_-20%,rgba(120,119,198,0.15),rgba(255,255,255,0))] dark:bg-[radial-gradient(ellipse_20%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]">
-      {/* Header */}
-      {/* <DoctorNavbar /> */}
+    <div className="relative min-h-screen">
+      <div className="absolute top-0 z-[0] h-screen w-screen bg-purple-950/10 dark:bg-purple-950/10 bg-[radial-gradient(ellipse_20%_80%_at_50%_-20%,rgba(120,119,198,0.15),rgba(255,255,255,0))] dark:bg-[radial-gradient(ellipse_20%_80%_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]" />
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container relative mx-auto px-4 py-8 z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -42,13 +41,13 @@ const DoctorDashboard = () => {
           className="space-y-8"
         >
           <Tabs defaultValue="patients" className="w-full">
-            <TabsList className="grid w-full grid-cols-3  bg-white/20 dark:bg-gray-900/20 backdrop-blur-xl">
-              <TabsTrigger value="patients">Patient List</TabsTrigger>
-              <TabsTrigger value="requests">Access Requests</TabsTrigger>
-              <TabsTrigger value="notifications">Notifications</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3 bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border border-white/20 dark:border-gray-800/20 rounded-lg">
+              <TabsTrigger value="patients" className="data-[state=active]:bg-white/20 dark:data-[state=active]:bg-gray-800/20">Patient List</TabsTrigger>
+              <TabsTrigger value="requests" className="data-[state=active]:bg-white/20 dark:data-[state=active]:bg-gray-800/20">Access Requests</TabsTrigger>
+              <TabsTrigger value="notifications" className="data-[state=active]:bg-white/20 dark:data-[state=active]:bg-gray-800/20">Notifications</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="patients" className="medical-card mt-6  bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl rounded-lg border border-gray-200 dark:border-gray-800 p-6">
+            <TabsContent value="patients" className="mt-6">
               <div className="space-y-6">
                 <div className="flex items-center space-x-4">
                   <Input
@@ -56,46 +55,53 @@ const DoctorDashboard = () => {
                     placeholder="Search patients..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="max-w-sm"
+                    className="max-w-sm bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border border-white/20 dark:border-gray-800/20"
                   />
-                  <Button variant="secondary">Search</Button>
+                  <Button 
+                    variant="outline"
+                    className="bg-white/20 dark:bg-gray-900/20 backdrop-blur-xl border border-white/20 dark:border-gray-800/20 hover:bg-white/30 dark:hover:bg-gray-800/30"
+                  >
+                    Search
+                  </Button>
                 </div>
 
-                <div className="divide-y">
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                   {[1, 2, 3, 4].map((i) => (
                     <div
                       key={i}
-                      className="flex items-center justify-between py-4"
+                      className="bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border border-white/20 dark:border-gray-800/20 rounded-lg p-6 transition-all hover:bg-white/20 dark:hover:bg-gray-800/20"
                     >
-                      <div>
-                        <p className="font-medium">Patient #{i}</p>
-                        <p className="text-sm text-gray-500">
-                          Last visit: March {i}, 2024
-                        </p>
+                      <div className="flex flex-col space-y-4">
+                        <div>
+                          <h3 className="font-medium">Patient #{i}</h3>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Last visit: March {i}, 2024
+                          </p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          className="w-full bg-gradient-to-r from-purple-600 to-pink-500 dark:from-purple-300 dark:to-orange-200 text-white border-0"
+                          onClick={() => handleRequestAccess(`${i}`)}
+                        >
+                          Request Access
+                        </Button>
                       </div>
-                      <Button
-                        variant="outline"
-                        className="text-medical-600"
-                        onClick={() => handleRequestAccess(`${i}`)}
-                      >
-                        Request Access
-                      </Button>
                     </div>
                   ))}
                 </div>
               </div>
             </TabsContent>
 
-            <TabsContent value="requests" className="medical-card mt-6  bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl rounded-lg border border-gray-200 dark:border-gray-800 p-6">
+            <TabsContent value="requests" className="mt-6">
               <div className="space-y-6">
                 <h3 className="text-lg font-medium">Approved Reports</h3>
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                <div className="grid gap-6 md:grid-cols-2">
                   {[1, 2].map((i) => (
-                    <div key={i} className="medical-card">
-                      <div className="flex justify-between">
+                    <div key={i} className="bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border border-white/20 dark:border-gray-800/20 rounded-lg p-6">
+                      <div className="flex justify-between items-center">
                         <div>
                           <p className="font-medium">Patient #{i}</p>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
                             Report #: MED-2024-{i}
                           </p>
                         </div>
@@ -103,6 +109,7 @@ const DoctorDashboard = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleViewReport(i)}
+                          className="bg-white/20 dark:bg-gray-900/20 backdrop-blur-xl border border-white/20 dark:border-gray-800/20 hover:bg-white/30 dark:hover:bg-gray-800/30"
                         >
                           <Eye className="mr-2 h-4 w-4" />
                           View Report
@@ -114,21 +121,21 @@ const DoctorDashboard = () => {
               </div>
             </TabsContent>
 
-            <TabsContent value="notifications" className="medical-card mt-6  bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl rounded-lg border border-gray-200 dark:border-gray-800 p-6">
+            <TabsContent value="notifications" className="mt-6">
               <div className="space-y-6">
                 <h3 className="text-lg font-medium">Recent Updates</h3>
-                <div className="divide-y">
+                <div className="bg-white/10 dark:bg-gray-900/10 backdrop-blur-xl border border-white/20 dark:border-gray-800/20 rounded-lg divide-y divide-white/10 dark:divide-gray-800/10">
                   {[1, 2, 3].map((i) => (
-                    <div key={i} className="py-4">
-                      <div className="flex items-start space-x-3">
-                        <div className="rounded-full bg-medical-100 p-2">
-                          <BellRing className="h-4 w-4 text-medical-600" />
+                    <div key={i} className="p-6">
+                      <div className="flex items-start space-x-4">
+                        <div className="rounded-full bg-gradient-to-r from-purple-600 to-pink-500 dark:from-purple-300 dark:to-orange-200 p-2">
+                          <BellRing className="h-4 w-4 text-white" />
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">
+                          <p className="font-medium">
                             Access Granted by Patient #{i}
                           </p>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
                             March {i}, 2024 at 2:30 PM
                           </p>
                         </div>
