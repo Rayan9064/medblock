@@ -1,11 +1,14 @@
+/**
+ * @deprecated This component is no longer used as we now directly link to IPFS files.
+ * The Pinata API returns JSON metadata which contains the original file link.
+ * Keeping this file for reference in case we need to reimplement previewing functionality.
+ */
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Loader2, FileText, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-// Import from pinataService instead of privateStorageService
-import { fetchPrivateFileFromPinata } from "@/services/pinataService";
 
 interface ViewReportDialogProps {
   isOpen: boolean;
@@ -30,61 +33,31 @@ export function ViewReportDialog({ isOpen, onClose, report }: ViewReportDialogPr
   const [error, setError] = useState<string | null>(null);
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [fileBlob, setFileBlob] = useState<Blob | null>(null);
-  
-  // Helper function to determine MIME type from file extension
-  const determineMimeType = (url: string): string => {
-    const extension = url.split('.').pop()?.toLowerCase() || '';
-    const mimeTypes: Record<string, string> = {
-      'pdf': 'application/pdf',
-      'jpg': 'image/jpeg',
-      'jpeg': 'image/jpeg',
-      'png': 'image/png',
-      'gif': 'image/gif',
-      'doc': 'application/msword',
-      'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'xls': 'application/vnd.ms-excel',
-      'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'ppt': 'application/vnd.ms-powerpoint',
-      'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-      'txt': 'text/plain',
-      'csv': 'text/csv',
-      'html': 'text/html',
-      'htm': 'text/html'
-    };
-    
-    return mimeTypes[extension] || 'application/pdf'; // Default to PDF if unknown
-  };
 
-  // Function to fetch the file using private storage
-  const fetchPrivateFile = async () => {
-    if (!report || !report.ipfsHash) {
-      throw new Error("Missing IPFS hash for the report");
-    }
-
-    console.log("Fetching private file with CID:", report.ipfsHash);
+  // Function to fetch the file using our Pinata API route
+  const fetchFile = async (ipfsHash: string) => {
+    console.log("Fetching file with CID:", ipfsHash);
     
     try {
-      // Get the file using authenticated access
-      const blob = await fetchPrivateFileFromPinata(report.ipfsHash);
+      const response = await fetch(`/api/pinata?ipfsHash=${ipfsHash}`);
       
-      if (!blob) {
-        throw new Error("Failed to fetch file from Pinata");
+      if (!response.ok) {
+        throw new Error("Failed to fetch file from Pinata API");
       }
+
+      const contentType = response.headers.get('Content-Type');
+      const blob = await response.blob();
       
-      // Determine the correct MIME type
-      let mimeType = determineMimeType(report.reportUrl || report.ipfsHash);
-      
-      // Create a typed blob
-      const typedBlob = new Blob([blob], { type: mimeType });
-      
-      // Create a URL for the blob
+      // Use the content type from the response, or fall back to application/pdf
+      const typedBlob = new Blob([blob], { type: contentType || 'application/pdf' });
       const blobUrl = URL.createObjectURL(typedBlob);
       
       console.log("File fetched successfully, created blob URL:", blobUrl);
+      console.log("Content-Type:", contentType);
       
       return { blob: typedBlob, url: blobUrl };
     } catch (error) {
-      console.error("Error fetching private file:", error);
+      console.error("Error fetching file:", error);
       throw error;
     }
   };
@@ -97,7 +70,6 @@ export function ViewReportDialog({ isOpen, onClose, report }: ViewReportDialogPr
       setFileUrl(null);
       setFileBlob(null);
       
-      // Fetch the private file
       const loadReport = async () => {
         try {
           if (!report.ipfsHash && !report.reportUrl) {
@@ -110,16 +82,15 @@ export function ViewReportDialog({ isOpen, onClose, report }: ViewReportDialogPr
             url: report.reportUrl
           });
           
-          // If we have an IPFS hash, fetch the private file
+          // If we have an IPFS hash, fetch from gateway
           if (report.ipfsHash) {
-            const { blob, url } = await fetchPrivateFile();
+            const { blob, url } = await fetchFile(report.ipfsHash);
             setFileBlob(blob);
             setFileUrl(url);
           } 
           // Otherwise, use the reportUrl directly (legacy support)
           else if (report.reportUrl) {
-            console.warn("No IPFS hash found, using reportUrl directly (legacy mode)");
-            // Create blob URL to prevent automatic download
+            console.log("Using direct report URL");
             const response = await fetch(report.reportUrl);
             const blob = await response.blob();
             const blobUrl = URL.createObjectURL(blob);
@@ -150,7 +121,6 @@ export function ViewReportDialog({ isOpen, onClose, report }: ViewReportDialogPr
     if (!report) return;
     
     try {
-      // If we already have the blob, use it
       if (fileBlob) {
         const downloadUrl = URL.createObjectURL(fileBlob);
         const a = document.createElement('a');
@@ -169,16 +139,11 @@ export function ViewReportDialog({ isOpen, onClose, report }: ViewReportDialogPr
           title: "Download Started",
           description: "Your report is being downloaded",
         });
-      } 
-      // If we don't have the blob but have an IPFS hash, generate a temporary access URL
-      else if (report.ipfsHash) {
+      } else if (report.ipfsHash) {
         setIsLoading(true);
         
         try {
-          // Get a temporary access URL (valid for 30 minutes)
-          const { blob, url } = await fetchPrivateFile();
-          setFileBlob(blob);
-          
+          const { blob } = await fetchFile(report.ipfsHash);
           const downloadUrl = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = downloadUrl;
@@ -187,7 +152,6 @@ export function ViewReportDialog({ isOpen, onClose, report }: ViewReportDialogPr
           a.click();
           document.body.removeChild(a);
           
-          // Clean up the URL object
           setTimeout(() => {
             URL.revokeObjectURL(downloadUrl);
           }, 100);
@@ -197,10 +161,10 @@ export function ViewReportDialog({ isOpen, onClose, report }: ViewReportDialogPr
             description: "Your report is being downloaded",
           });
         } catch (err) {
-          console.error("Failed to generate download URL:", err);
+          console.error("Failed to download file:", err);
           toast({
             title: "Download Failed",
-            description: "Could not generate download link",
+            description: "Could not download the file",
             variant: "destructive",
           });
         } finally {

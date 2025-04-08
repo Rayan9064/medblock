@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PinataError } from '@/services/pinataService';
 import axios from 'axios';
 import FormData from 'form-data';
 
-const PINATA_JWT = process.env.PINATA_JWT; // Note: No longer NEXT_PUBLIC_
+const PINATA_JWT = process.env.PINATA_JWT;
 
 /**
  * POST: Upload file to Pinata IPFS
@@ -12,7 +11,6 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
     const file = formData.get('file');
-    const metadata = formData.get('metadata') ? JSON.parse(formData.get('metadata') as string) : null;
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
@@ -22,7 +20,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Pinata JWT not configured' }, { status: 500 });
     }
 
-    // Create a Node.js FormData instance
+    // Create a Node.js FormData instance for Pinata
     const pinataFormData = new FormData();
 
     // Convert the file to buffer and append to FormData
@@ -32,19 +30,19 @@ export async function POST(req: NextRequest) {
       contentType: (file as File).type,
     });
 
+    // Set basic metadata
     const pinataMetadata = JSON.stringify({
-      name: (file as File).name,
-      keyvalues: {
-        access: "private"
-      }
+      name: (file as File).name
     });
     pinataFormData.append('pinataMetadata', pinataMetadata);
 
+    // Use CIDv1 for better compatibility
     const pinataOptions = JSON.stringify({
       cidVersion: 1
     });
     pinataFormData.append('pinataOptions', pinataOptions);
 
+    console.log(`📤 Uploading file to Pinata: ${(file as File).name}`);
     const response = await axios.post(
       'https://api.pinata.cloud/pinning/pinFileToIPFS',
       pinataFormData,
@@ -61,6 +59,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No IPFS hash received' }, { status: 500 });
     }
 
+    console.log(`✅ File uploaded successfully to IPFS with CID: ${response.data.IpfsHash}`);
     return NextResponse.json({
       success: true,
       ipfsHash: response.data.IpfsHash,
@@ -95,14 +94,27 @@ export async function GET(req: NextRequest) {
     const response = await axios.get(
       `https://gateway.pinata.cloud/ipfs/${ipfsHash}`,
       {
-        responseType: 'arraybuffer',
         headers: {
           'Authorization': `Bearer ${PINATA_JWT}`
-        }
+        },
+        responseType: 'arraybuffer' // Important for handling binary files
       }
     );
 
-    // Create response with proper content type
+    // Check if the response is JSON by trying to parse it
+    try {
+      const textContent = Buffer.from(response.data).toString('utf-8');
+      const jsonData = JSON.parse(textContent);
+      
+      // If it's our metadata JSON with a file URI, redirect to it
+      if (jsonData?.properties?.files?.[0]?.uri) {
+        return NextResponse.redirect(jsonData.properties.files[0].uri);
+      }
+    } catch (e) {
+      // Not JSON, continue with binary response
+    }
+
+    // If not JSON or no URI to redirect to, return the binary data with proper content type
     const buffer = Buffer.from(response.data);
     return new NextResponse(buffer, {
       status: 200,
@@ -111,10 +123,11 @@ export async function GET(req: NextRequest) {
         'Content-Length': buffer.length.toString()
       }
     });
+
   } catch (error: any) {
-    console.error('Error fetching from Pinata:', error);
+    console.error('Error in GET handler:', error);
     return NextResponse.json({
-      error: error.message || 'Error fetching file',
+      error: error.message || 'Error processing request',
       status: error.response?.status || 500
     }, { status: error.response?.status || 500 });
   }

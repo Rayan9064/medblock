@@ -13,8 +13,7 @@ export async function POST(req: NextRequest) {
       patientName: metadata.patientName,
       doctorName: metadata.doctorName,
       reportType: metadata.reportType || "General",
-      date: metadata.date,
-      isPrivate: metadata.isPrivate || false
+      date: metadata.date
     });
 
     // Validate required fields
@@ -27,7 +26,7 @@ export async function POST(req: NextRequest) {
     }
     console.log("✅ All required fields present in metadata");
 
-    // Mint the NFT using our improved solanaService
+    // Mint the NFT
     console.log("🔐 Minting medical report NFT with transaction retry logic");
     const { nftAddress, explorerUrl, metadataUri } = await mintMedicalNFT(metadata);
     
@@ -36,21 +35,11 @@ export async function POST(req: NextRequest) {
     console.log("🌐 NFT Explorer URL:", explorerUrl);
     console.log("📄 Metadata URI:", metadataUri);
 
-    // For private files, log that we're using Pinata private storage with JWT
-    if (metadata.isPrivate) {
-      console.log("🔒 Report file is private, using Pinata JWT authentication for access control");
-      console.log("🔑 Access method: pinata_authenticated (JWT)");
-    } else {
-      console.log("🌐 Report file is public, no authentication needed");
-    }
-
     return NextResponse.json({
       success: true,
       nftAddress,
       explorerUrl,
-      metadataUri,
-      isPrivate: metadata.isPrivate || false,
-      accessMethod: metadata.isPrivate ? "pinata_authenticated" : "public"
+      metadataUri
     }, { status: 200 });
   } catch (error: unknown) {
     console.error("❌ Error minting NFT:", error);

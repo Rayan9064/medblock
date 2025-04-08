@@ -1,10 +1,8 @@
 // metadataService.ts    
-// Fetch NFT metadata & report details with secure decryption
+// Fetch NFT metadata & report details
 import axios from 'axios';
 import { Metaplex } from '@metaplex-foundation/js';
 import { Connection, clusterApiUrl, PublicKey } from '@solana/web3.js';
-import { getEncryptionKey } from './accessControl';
-import { decryptFile } from './encryptionService';
 
 // 🔗 Connect to Solana Devnet
 const rpcUrl = clusterApiUrl('devnet');
@@ -52,68 +50,20 @@ export const fetchMetadataFromURI = async (metadataUri: string) => {
 };
 
 /**
- * Fetches and decrypts a medical report file if the user has access
- * @param reportId - The unique identifier for the report (NFT address)
- * @param walletAddress - The wallet address of the user requesting access
- * @returns The decrypted file blob or null if access is denied
+ * Fetches a medical report file
+ * @param reportUrl - The IPFS URL of the report
+ * @returns The file blob
  */
-export const fetchAndDecryptMedicalReport = async (
-  reportId: string,
-  walletAddress: string
-): Promise<Blob | null> => {
+export const fetchMedicalReport = async (reportUrl: string): Promise<Blob> => {
   try {
-    // Step 1: Get NFT metadata to find the encrypted file URL
-    const metadata = await getNFTMetadata(reportId);
-    
-    // Step 2: Extract the encrypted file URL from the metadata
-    if (!metadata?.properties?.files?.[0]?.uri) {
-      throw new Error('Encrypted file URL not found in metadata');
-    }
-    const encryptedFileUrl = metadata.properties.files[0].uri;
-    
-    // Step 3: Verify if encryption is used
-    const isEncrypted = metadata.properties.files[0].encryption?.algorithm === 'AES-256-GCM';
-    
-    // If the file is not encrypted, just return it directly
-    if (!isEncrypted) {
-      const response = await axios.get(encryptedFileUrl, {
-        responseType: 'blob'
-      });
-      return response.data;
-    }
-    
-    // Step 4: Get the encryption key if the user has access
-    const keyData = await getEncryptionKey(reportId, walletAddress);
-    
-    if (!keyData) {
-      console.error('Access denied or encryption key not found');
-      return null;
-    }
-    
-    // Step 5: Fetch the encrypted file
-    const response = await axios.get(encryptedFileUrl, {
+    console.log('Fetching medical report from:', reportUrl);
+    const response = await axios.get(reportUrl, {
       responseType: 'blob'
     });
-    const encryptedBlob = response.data;
-    
-    // Step 6: Convert the base64 key back to a CryptoKey
-    const keyBytes = Uint8Array.from(atob(keyData.key), c => c.charCodeAt(0));
-    const importedKey = await crypto.subtle.importKey(
-      'raw',
-      keyBytes,
-      { name: 'AES-GCM' },
-      false,
-      ['decrypt']
-    );
-    
-    // Step 7: Decrypt the file
-    // For this implementation, we need to handle the IV properly
-    // Here we assume the IV is properly encoded in the encrypted file
-    const decryptedBlob = await decryptFile(encryptedBlob, importedKey);
-    
-    return decryptedBlob;
+    console.log('Successfully fetched report, size:', response.data.size);
+    return response.data;
   } catch (error) {
-    console.error('Error fetching and decrypting medical report:', error);
+    console.error('Error fetching medical report:', error);
     throw error;
   }
 };

@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { FileText, Eye, Download } from "lucide-react";
+import { FileText, ExternalLink } from "lucide-react";
 
 interface ReportCardProps {
   report: {
@@ -11,14 +11,27 @@ interface ReportCardProps {
     doctorName?: string;
     reportType?: string;
     reportDate?: string;
+    ipfsHash?: string;
     [key: string]: string | number | boolean | undefined;
   };
   index: number;
-  onView: (index: number) => void;
-  onDownload: (index: number) => void;
 }
 
-export const ReportCard = ({ report, index, onView, onDownload }: ReportCardProps) => {
+export const ReportCard = ({ report, index }: ReportCardProps) => {
+  const handleViewReport = async () => {
+    if (report.ipfsHash) {
+      try {
+        // Download the file from the Pinata API
+        const response = await fetch(`/api/pinata?ipfsHash=${report.ipfsHash}`);
+        
+        console.log('Response:', response);
+      } catch (error) {
+        console.error('Error viewing report:', error);
+        // You might want to add proper error handling here, like showing a toast
+      }
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -58,24 +71,16 @@ export const ReportCard = ({ report, index, onView, onDownload }: ReportCardProp
           </p>
         </div>
 
-        <div className="mt-4 flex justify-end space-x-2">
+        <div className="mt-4 flex justify-end">
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onView(index)}
+            onClick={handleViewReport}
+            disabled={!report.ipfsHash}
             className="border-gray-200 dark:border-gray-800"
           >
-            <Eye className="mr-2 h-4 w-4" />
-            View
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onDownload(index)}
-            className="border-gray-200 dark:border-gray-800"
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Download
+            <ExternalLink className="mr-2 h-4 w-4" />
+            View Report
           </Button>
         </div>
       </div>

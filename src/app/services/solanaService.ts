@@ -48,19 +48,9 @@ export interface MedicalNFTMetadata {
   reportType?: string;
   patientAddress?: string;
   doctorAddress?: string;
-  // Encryption fields are now deprecated
-  // encryptionKey?: string;
-  // iv?: string;
-  originalFileHash?: string;
   ipfsHash?: string;
-  isPrivate?: boolean;
   metadataCID?: string;
   recordId?: string;
-  // Add JWT-specific fields
-  access?: {
-    method: string;
-    isPrivate: boolean;
-  };
 }
 
 interface MetadataAttribute {
@@ -70,10 +60,8 @@ interface MetadataAttribute {
 
 export const mintMedicalNFT = async (metadata: MedicalNFTMetadata) => {
   try {
-    console.log("🔐 Minting medical report NFT with transaction retry logic");
+    console.log("🚀 Minting medical report NFT");
     
-    // 🏥 Medical Report Metadata
-    // Create an attributes array without null values
     const attributes = [
       { trait_type: "Patient", value: metadata.patientName },
       { trait_type: "Doctor", value: metadata.doctorName },
@@ -82,11 +70,6 @@ export const mintMedicalNFT = async (metadata: MedicalNFTMetadata) => {
       { trait_type: "Record ID", value: metadata.recordId || `MED-${Date.now()}` },
       { trait_type: "Created At", value: new Date().toISOString() }
     ];
-    
-    // Add access control information based on the isPrivate flag
-    if (metadata.isPrivate) {
-      attributes.push({ trait_type: "Access Control", value: "Private - JWT" });
-    }
     
     // Add optional attributes only if they exist
     if (metadata.patientAddress) {
@@ -100,21 +83,15 @@ export const mintMedicalNFT = async (metadata: MedicalNFTMetadata) => {
     const medicalMetadata = {
       name: metadata.reportName,
       symbol: "MEDNFT",
-      description: `Patient: ${metadata.patientName} - Confidential Medical Record`,
+      description: `Patient: ${metadata.patientName} - Medical Record`,
       image: metadata.imageUrl,
       attributes,
       properties: {
         files: [{
           uri: metadata.reportUrl,
-          type: "application/pdf",
-          isPrivate: metadata.isPrivate || false,
-          access: metadata.isPrivate ? {
-            method: "pinata_authenticated",
-            requiresJWT: true
-          } : undefined
+          type: "application/pdf"
         }],
         category: "medical",
-        originalFileHash: metadata.originalFileHash,
         ipfsHash: metadata.ipfsHash
       }
     };
@@ -260,13 +237,6 @@ export const fetchMedicalReports = async (walletAddress: string) => {
           const metadata = metadataResponse.data;
           console.log("📄 Retrieved metadata:", metadata.name || "Unnamed NFT");
 
-          // Check if the file is private (using JWT authentication)
-          const isPrivate = metadata.properties?.files?.[0]?.isPrivate || 
-                          metadata.properties?.files?.[0]?.access?.method === "pinata_authenticated" ||
-                          metadata.attributes?.some((attr: MetadataAttribute) => 
-                            attr.trait_type === "Access Control" && attr.value === "Private - JWT"
-                          ) || false;
-
           // Handle different metadata formats gracefully
           return {
             name: metadata.name || "Unknown Report",
@@ -278,9 +248,7 @@ export const fetchMedicalReports = async (walletAddress: string) => {
             ipfsHash: nft.uri.replace("https://gateway.pinata.cloud/ipfs/", ""),
             fileUrl: metadata.properties?.files?.[0]?.uri || "",
             nftAddress: nft.address.toBase58(),
-            created_at: Date.now(), // Ensure each NFT has a created_at timestamp
-            isPrivate, // Add isPrivate flag for UI to know authentication is needed
-            accessMethod: isPrivate ? "pinata_authenticated" : "public"
+            created_at: Date.now()
           };
         } catch (error) {
           console.error(`❌ Error fetching metadata for NFT: ${nft.address.toBase58()}`, error);

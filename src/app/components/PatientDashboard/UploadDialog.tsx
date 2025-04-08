@@ -19,7 +19,11 @@ interface ReportFormData {
   reportDate: string;
 }
 
-export const UploadDialog = () => {
+interface UploadDialogProps {
+  onUploadSuccess?: () => void;
+}
+
+export function UploadDialog({ onUploadSuccess }: UploadDialogProps) {
   const { toast } = useToast();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -136,6 +140,10 @@ export const UploadDialog = () => {
         reportDate: new Date().toISOString().split('T')[0],
       });
       setSelectedFile(null);
+      setIpfsHash("");
+      
+      // Call the onUploadSuccess callback
+      onUploadSuccess?.();
 
     } catch (error: any) {
       console.error("❌ Upload error:", error);
@@ -150,12 +158,12 @@ export const UploadDialog = () => {
   };
 
   // Helper function to calculate file hash (optional)
-  const calculateFileHash = async (file: File): Promise<string> => {
-    const buffer = await file.arrayBuffer();
-    const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  };
+  // const calculateFileHash = async (file: File): Promise<string> => {
+  //   const buffer = await file.arrayBuffer();
+  //   const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+  //   const hashArray = Array.from(new Uint8Array(hashBuffer));
+  //   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  // };
 
   return (
     <Dialog>

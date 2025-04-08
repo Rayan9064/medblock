@@ -1,8 +1,8 @@
 // pinataService.ts
-// Handle IPFS uploads via API endpoints
+// Simple IPFS uploads via Pinata API
 import axios from 'axios';
 
-// Logging utility for consistent log formatting
+// Logging utility
 const logger = {
   info: (message: string, data?: any) => {
     console.info(`🔵 [Pinata Service] ${message}`, data ? data : '');
@@ -10,15 +10,11 @@ const logger = {
   success: (message: string, data?: any) => {
     console.log(`✅ [Pinata Service] ${message}`, data ? data : '');
   },
-  warn: (message: string, data?: any) => {
-    console.warn(`⚠️ [Pinata Service] ${message}`, data ? data : '');
-  },
   error: (message: string, error: any) => {
     console.error(`❌ [Pinata Service] ${message}`, {
       message: error.message,
       status: error.response?.status,
-      data: error.response?.data,
-      stack: error.stack
+      data: error.response?.data
     });
   }
 };
@@ -37,11 +33,11 @@ export class PinataError extends Error {
 }
 
 /**
- * Upload private file to Pinata IPFS via API
+ * Upload file to Pinata IPFS via API
  * @param file - File to be uploaded
  * @returns IPFS Hash (CID) of the uploaded file
  */
-export const uploadPrivateFileToPinata = async (file: File): Promise<string> => {
+export const uploadFileToPinata = async (file: File): Promise<string> => {
   logger.info(`Starting file upload: ${file.name} (${file.size} bytes)`);
 
   try {
@@ -71,24 +67,16 @@ export const uploadPrivateFileToPinata = async (file: File): Promise<string> => 
     logger.success(`File uploaded successfully with CID: ${data.ipfsHash}`);
     return data.ipfsHash;
   } catch (error: any) {
-    const pinataError = new PinataError(
-      'Error uploading file to Pinata',
-      'UPLOAD_ERROR',
-      error.status,
-      error.details
-    );
-    logger.error('Upload failed', pinataError);
-    throw pinataError;
+    logger.error('Upload failed', error);
+    throw error;
   }
 };
 
 /**
  * Upload medical report and metadata for NFT minting
- * Uses private file storage with API authentication
- * 
- * @param file - PDF file to upload
- * @param metadata - Report metadata (patient name, doctor, etc)
- * @returns Object containing file CID, metadata CID
+ * @param file - Medical report file
+ * @param metadata - Report metadata
+ * @returns Object containing file CID and metadata CID
  */
 export const uploadMedicalReportForNFT = async (
   file: File, 
@@ -108,13 +96,13 @@ export const uploadMedicalReportForNFT = async (
     }
     
     logger.info('Uploading medical report file...');
-    const fileCID = await uploadPrivateFileToPinata(file);
+    const fileCID = await uploadFileToPinata(file);
     logger.success('Medical report file uploaded', { fileCID });
     
     const nftMetadata = {
       name: metadata.reportName,
       symbol: "MEDNFT",
-      description: `Patient: ${metadata.patientName} - Confidential Medical Report`,
+      description: `Patient: ${metadata.patientName} - Medical Record`,
       image: metadata.thumbnailUrl,
       attributes: [
         { trait_type: "Patient", value: metadata.patientName },
@@ -122,11 +110,10 @@ export const uploadMedicalReportForNFT = async (
         { trait_type: "Date", value: metadata.date }
       ],
       properties: {
-        files: [{ uri: fileCID, type: file.type }],
-        access: { 
-          method: "pinata_authenticated",
-          isPrivate: true
-        }
+        files: [{ 
+          uri: `https://gateway.pinata.cloud/ipfs/${fileCID}`,
+          type: file.type
+        }]
       }
     };
     
@@ -136,28 +123,18 @@ export const uploadMedicalReportForNFT = async (
     
     return {
       fileCID,
-      metadataCID,
-      access: {
-        method: "pinata_authenticated",
-        isPrivate: true
-      }
+      metadataCID
     };
   } catch (error: any) {
-    const pinataError = new PinataError(
-      'Error uploading medical report for NFT',
-      'NFT_UPLOAD_ERROR',
-      error.status,
-      error.details
-    );
-    logger.error('Medical report upload failed', pinataError);
-    throw pinataError;
+    logger.error('Medical report upload failed', error);
+    throw error;
   }
 };
 
 /**
- * Upload JSON metadata to Pinata IPFS via API
+ * Upload JSON metadata to Pinata IPFS
  * @param jsonData - JSON data to upload
- * @param name - Name for the metadata
+ * @param name - Name for the metadata file
  * @returns IPFS Hash
  */
 export const uploadJSONToPinata = async (jsonData: any, name: string): Promise<string> => {
@@ -168,7 +145,6 @@ export const uploadJSONToPinata = async (jsonData: any, name: string): Promise<s
     const blob = new Blob([JSON.stringify(jsonData)], { type: 'application/json' });
     const file = new File([blob], `${name}.json`, { type: 'application/json' });
     formData.append('file', file);
-    formData.append('metadata', JSON.stringify({ name }));
 
     const response = await fetch('/api/pinata', {
       method: 'POST',
@@ -193,49 +169,7 @@ export const uploadJSONToPinata = async (jsonData: any, name: string): Promise<s
     logger.success(`JSON metadata uploaded successfully with CID: ${data.ipfsHash}`);
     return data.ipfsHash;
   } catch (error: any) {
-    const pinataError = new PinataError(
-      'Error uploading JSON to Pinata',
-      'JSON_UPLOAD_ERROR',
-      error.status,
-      error.details
-    );
-    logger.error('JSON upload failed', pinataError);
-    throw pinataError;
-  }
-};
-
-/**
- * Fetch a private file from Pinata using API
- * @param ipfsHash - The IPFS hash (CID) of the file to fetch
- * @returns A blob of the file data
- */
-export const fetchPrivateFileFromPinata = async (ipfsHash: string): Promise<Blob> => {
-  logger.info(`Fetching private file with CID: ${ipfsHash}`);
-
-  try {
-    const response = await fetch(`/api/pinata?ipfsHash=${ipfsHash}`);
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new PinataError(
-        error.error || 'Fetch failed',
-        'FETCH_ERROR',
-        response.status,
-        error
-      );
-    }
-
-    const blob = await response.blob();
-    logger.success('File fetched successfully', { size: blob.size });
-    return blob;
-  } catch (error: any) {
-    const pinataError = new PinataError(
-      'Error fetching private file',
-      'FETCH_ERROR',
-      error.status,
-      error.details
-    );
-    logger.error('File fetch failed', pinataError);
-    throw pinataError;
+    logger.error('JSON upload failed', error);
+    throw error;
   }
 };
